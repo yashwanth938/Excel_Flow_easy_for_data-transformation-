@@ -57,14 +57,15 @@ Standard lookup or join operations fail when multiple records have duplicate key
 The **Smart Match Tool** matches records using multiple criteria and a weighted confidence scoring algorithm to select the **best and most accurate** candidate.
 
 ### Configuration
-1. **Primary Key A & B**: Select the duplicate-containing identifier (e.g. `Employee SSN` in both files).
+1. **Primary Key (Source File A) & Primary Key (Targeted Lookup File B)**: Select the duplicate-containing identifier (e.g. `Employee SSN` in both files).
 2. **Matching Criteria Table**: Add rule criteria mapping left columns to right columns:
    - **Match Type**: 
      - `Exact`: Values must be equal (case-insensitive, trimmed).
      - `Fuzzy`: Calculates Levenshtein Similarity ($1 - \frac{\text{Distance}}{\text{Max Length}}$) between strings.
      - `Relationship`: Normalizes common relationship codings (e.g., `EE`, `Self`, `Subscriber` $\rightarrow$ `employee`; `SP`, `Spouse`, `Wife` $\rightarrow$ `spouse`; `CH`, `Child`, `Son` $\rightarrow$ `child`) and checks for equivalence.
    - **Weight**: Set a weight multiplier between `0.1` and `1.0` reflecting the importance of the criterion.
-3. **Criteria List**: Display and delete configured comparison pairs.
+3. **Fields to Copy/Retrieve**: Checkboxes to select which specific columns to extract from File B (Targeted lookup file). For each selected field, type a custom output name under **"Retrieve As"** to write it into a new column.
+4. **Criteria List**: Display and delete configured comparison pairs.
 
 ### Matching Algorithm
 For each row $r_A$ in File A:
@@ -78,10 +79,10 @@ For each row $r_A$ in File A:
    - $\text{Score} \ge 0.8 \rightarrow$ **Best Match**
    - $\text{Score} \ge 0.5 \rightarrow$ **Possible Match**
    - $\text{Score} < 0.5 \rightarrow$ **Unmatched**
-6. Append B's fields (using a `_B` suffix for collisions) along with `Match_Status`, `Match_Confidence`, and `Match_Score` to the output dataset.
+6. Copy the values of the selected columns from File B and write them under the custom **Retrieve As** field names (or copy all columns with a `_B` suffix as fallback if no retrieved fields are checked), along with `Match_Status`, `Match_Confidence`, and `Match_Score` to the output dataset.
 
 ### Outputs
-- Combined dataset containing all matched and unmatched records.
+- Combined dataset containing all matched records with the retrieved fields added as new columns.
 - **Smart Match Report**: Renders directly in the Properties tab after execution, showing total count of Perfect, Best, Possible, and Unmatched rows, left/right duplicate key counts, and the overall Match Rate percentage.
 
 ---
@@ -96,7 +97,7 @@ Automates the population of `Volume`, `Increment`, and `Requested Increment` fie
 2. **Destination Columns**: Define target output columns (defaults: `Volume`, `Increment`, and `Requested_Increment`).
 3. **Overwrite Checkbox**: Toggle whether to overwrite existing columns in the dataset if the name matches. By default, it creates new columns.
 4. **Restrict Source Columns (Optional)**: Checkboxes to select a manual subset of input columns. If set, dropdowns in the rule builder only display these checked columns.
-5. **Mapping Rules**: Pair a specific coverage name (e.g. `Employee Life`) to:
+5. **Mapping Rules**: Bulk map coverage names by typing them comma-separated (e.g. `EE Life, Employee Life, Basic Life`) in the text box. The UI will automatically split them and create separate rules for each name, mapping them to:
    - **Volume Source**: Select a column (e.g., `Employee Life Amount`) or type a custom static value.
    - **Increment Source**: Select a column or type a static value.
    - **Requested Increment Source**: Select a column or type a static value.

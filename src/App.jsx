@@ -3973,7 +3973,7 @@ export default function App() {
 
                               return (
                                 <>
-                                  <label className="block text-[9px] uppercase text-teal-500 font-bold">Primary Key (File A)</label>
+                                  <label className="block text-[9px] uppercase text-teal-500 font-bold">Primary Key (Source File A)</label>
                                   <select
                                     className="w-full bg-[#050e10] border border-teal-950 rounded p-1.5 text-xs text-teal-200 focus:outline-none font-mono"
                                     value={activeNode.config.leftKey || ''}
@@ -3983,7 +3983,7 @@ export default function App() {
                                     {baseCols.map(col => <option key={col} value={col}>{col}</option>)}
                                   </select>
 
-                                  <label className="block text-[9px] uppercase text-teal-500 font-bold">Primary Key (File B)</label>
+                                  <label className="block text-[9px] uppercase text-teal-500 font-bold">Primary Key (Targeted Lookup File B)</label>
                                   <select
                                     className="w-full bg-[#050e10] border border-teal-950 rounded p-1.5 text-xs text-teal-200 focus:outline-none font-mono"
                                     value={activeNode.config.rightKey || ''}
@@ -4088,6 +4088,66 @@ export default function App() {
                                       </div>
                                     </div>
                                   )}
+
+                                  {/* FIELDS TO RETRIEVE FROM FILE B */}
+                                  <div className="border-t border-teal-950/60 pt-2 mt-2 space-y-1">
+                                    <label className="block text-[9px] uppercase text-teal-500 font-bold">Fields to Copy/Retrieve from Targeted File B</label>
+                                    <div className="bg-[#050e10]/80 border border-teal-950 rounded p-1.5 max-h-48 overflow-y-auto custom-scrollbar space-y-2">
+                                      {refCols.length === 0 ? (
+                                        <div className="text-[9px] text-teal-600 italic">Connect a secondary file to view columns.</div>
+                                      ) : (
+                                        refCols.map(col => {
+                                          const retrievedFields = activeNode.config.retrievedFields || [];
+                                          const match = retrievedFields.find(f => f.sourceCol === col);
+                                          const isChecked = !!match;
+                                          const destName = match ? match.destCol : col;
+
+                                          return (
+                                            <div key={col} className="space-y-1 p-1 bg-[#06191c]/30 rounded border border-teal-950/30">
+                                              <label className="flex items-center gap-1.5 text-[9px] text-teal-200 cursor-pointer hover:text-teal-100">
+                                                <input 
+                                                  type="checkbox"
+                                                  checked={isChecked}
+                                                  onChange={(e) => {
+                                                    let nextList;
+                                                    if (e.target.checked) {
+                                                      nextList = [...retrievedFields, { sourceCol: col, destCol: col }];
+                                                    } else {
+                                                      nextList = retrievedFields.filter(f => f.sourceCol !== col);
+                                                    }
+                                                    updateNodeConfig(activeNode.id, 'retrievedFields', nextList);
+                                                  }}
+                                                  className="rounded border-teal-900 bg-[#050e10] text-teal-600 focus:ring-0 cursor-pointer scale-75"
+                                                />
+                                                <span className="truncate font-mono">{col}</span>
+                                              </label>
+                                              
+                                              {isChecked && (
+                                                <div className="pl-5 flex items-center gap-1">
+                                                  <span className="text-[8px] text-teal-600 font-mono">Retrieve As:</span>
+                                                  <input 
+                                                    type="text"
+                                                    value={destName}
+                                                    onChange={(e) => {
+                                                      const nextList = retrievedFields.map(f => {
+                                                        if (f.sourceCol === col) {
+                                                          return { ...f, destCol: e.target.value };
+                                                        }
+                                                        return f;
+                                                      });
+                                                      updateNodeConfig(activeNode.id, 'retrievedFields', nextList);
+                                                    }}
+                                                    className="flex-1 bg-[#050e10] border border-teal-950 rounded px-1 py-0.5 text-[10px] text-teal-200 focus:outline-none font-mono"
+                                                    placeholder="Destination name"
+                                                  />
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+                                  </div>
 
                                   {/* DASHBOARD SUMMARY */}
                                   {activeNode.outputData?.dashboard && (
@@ -4223,7 +4283,7 @@ export default function App() {
                                     
                                     <input 
                                       type="text" 
-                                      placeholder="Coverage Name (e.g. Employee Life)"
+                                      placeholder="Coverage name(s) (e.g. EE Life, Employee Life)"
                                       value={volMappingCoverage}
                                       onChange={(e) => setVolMappingCoverage(e.target.value)}
                                       className="w-full bg-[#050e10] border border-teal-950 rounded p-1 text-[11px] text-teal-200 focus:outline-none font-mono"
@@ -4296,13 +4356,14 @@ export default function App() {
                                       type="button"
                                       disabled={!volMappingCoverage || (!volMappingVolume && !volMappingIncrement && !volMappingReqIncrement)}
                                       onClick={() => {
-                                        const newRule = {
-                                          coverageValue: volMappingCoverage,
+                                        const names = volMappingCoverage.split(',').map(n => n.trim()).filter(Boolean);
+                                        const newRules = names.map(name => ({
+                                          coverageValue: name,
                                           volumeSource: volMappingVolume,
                                           incrementSource: volMappingIncrement,
                                           reqIncrementSource: volMappingReqIncrement
-                                        };
-                                        updateNodeConfig(activeNode.id, 'rules', [...rules, newRule]);
+                                        }));
+                                        updateNodeConfig(activeNode.id, 'rules', [...rules, ...newRules]);
                                         setVolMappingCoverage('');
                                         setVolMappingVolume('');
                                         setVolMappingIncrement('');

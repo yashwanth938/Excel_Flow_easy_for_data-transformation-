@@ -1062,18 +1062,29 @@ const evaluateNode = async (node, inputDataArray) => {
         }
 
         const leftCols = leftData.columns;
-        const rightCols = rightData.columns.filter(c => c !== rKey);
-        const colMapping = {};
+        const retrievedFields = config.retrievedFields || [];
         const mergedCols = [...leftCols];
 
-        rightCols.forEach(col => {
-          let target = col;
-          if (leftCols.includes(col)) {
-            target = `${col}_B`;
-          }
-          colMapping[col] = target;
-          mergedCols.push(target);
-        });
+        const colMapping = {};
+
+        if (retrievedFields.length > 0) {
+          retrievedFields.forEach(f => {
+            colMapping[f.sourceCol] = f.destCol;
+            if (!mergedCols.includes(f.destCol)) {
+              mergedCols.push(f.destCol);
+            }
+          });
+        } else {
+          const rightCols = rightData.columns.filter(c => c !== rKey);
+          rightCols.forEach(col => {
+            let target = col;
+            if (leftCols.includes(col)) {
+              target = `${col}_B`;
+            }
+            colMapping[col] = target;
+            mergedCols.push(target);
+          });
+        }
 
         mergedCols.push('Match_Status', 'Match_Confidence', 'Match_Score');
         result.columns = mergedCols;
@@ -1106,8 +1117,8 @@ const evaluateNode = async (node, inputDataArray) => {
             const candidates = rightMap.get(k) || [];
 
             const outRow = { ...rowA };
-            rightCols.forEach(c => {
-              outRow[colMapping[c]] = '';
+            Object.values(colMapping).forEach(dest => {
+              outRow[dest] = '';
             });
 
             if (candidates.length === 0) {
@@ -1158,8 +1169,8 @@ const evaluateNode = async (node, inputDataArray) => {
             });
 
             if (bestCandidate) {
-              rightCols.forEach(c => {
-                outRow[colMapping[c]] = bestCandidate[c];
+              Object.entries(colMapping).forEach(([source, dest]) => {
+                outRow[dest] = bestCandidate[source] !== undefined && bestCandidate[source] !== null ? bestCandidate[source] : '';
               });
             }
 
